@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vision Voice Assistant</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <!-- Inter Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(99, 102, 241, 0.4);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(99, 102, 241, 0.8);
+    }
+    .glass-panel {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .pulse-glow {
+      box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col overflow-x-hidden selection:bg-brand-500 selection:text-white">
+
+  <!-- Header Navigation -->
+  <header class="glass-panel sticky top-0 z-40 px-4 py-3 border-b border-slate-800/80 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center shadow-lg shadow-brand-500/30">
+        <i class="ph-bold ph-eye text-white text-xl"></i>
+      </div>
+      <div>
+        <h1 class="text-base font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">VisionVoice AI</h1>
+        <p class="text-xs text-slate-400">Desktop Screen & Speech Co-Pilot</p>
+      </div>
+    </div>
+
+    <!-- Status Indicators & Control Drawer Button -->
+    <div class="flex items-center gap-2 sm:gap-4">
+      <div id="screenStatusBadge" class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-800/80 text-slate-400 border border-slate-700">
+        <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+        <span>Screen Idle</span>
+      </div>
+      <div id="voiceStatusBadge" class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-800/80 text-slate-400 border border-slate-700">
+        <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+        <span>Voice Off</span>
+      </div>
+      
+      <button id="openDocsModalBtn" class="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-brand-400 hover:text-brand-300 transition border border-slate-700/60 flex items-center gap-1.5 text-xs font-medium" title="Knowledge Base & Documents">
+        <i class="ph-bold ph-file-text text-base"></i>
+        <span class="hidden md:inline">Docs & Skills</span>
+      </button>
+      <button id="openSettingsBtn" class="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 hover:text-white transition border border-slate-700/60" title="Settings & Providers">
+        <i class="ph-bold ph-gear text-lg"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="flex-1 p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5 max-w-7xl mx-auto w-full">
+    
+    <!-- Left Column: Video Capture & Voice Dashboard -->
+    <section class="lg:col-span-7 flex flex-col gap-5">
+      
+      <!-- Video Live Canvas Card -->
+      <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3 relative overflow-hidden">
+        <div class="flex items-center justify-between border-b border-slate-800/60 pb-2">
+          <div class="flex items-center gap-2">
+            <i class="ph-bold ph-desktop-tower text-brand-500"></i>
+            <h2 class="text-sm font-semibold text-slate-200">Live Screen Feed / Image Upload</h2>
+          </div>
+          <div class="flex items-center gap-2">
+            <label for="autoSnapshotToggle" class="text-xs text-slate-400 cursor-pointer flex items-center gap-1.5 select-none">
+              <input type="checkbox" id="autoSnapshotToggle" class="rounded bg-slate-800 border-slate-700 text-brand-500 focus:ring-brand-500/30">
+              Auto Snapshot
+            </label>
+            <select id="snapshotInterval" class="bg-slate-900 border border-slate-700 rounded-lg text-xs px-2 py-1 text-slate-300 focus:outline-none focus:border-brand-500">
+              <option value="3">Every 3s</option>
+              <option value="5" selected>Every 5s</option>
+              <option value="10">Every 10s</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Video Container -->
+        <div class="relative w-full aspect-video rounded-xl bg-slate-950/80 border border-slate-800/80 overflow-hidden flex items-center justify-center group">
+          <video id="screenVideo" autoplay playsinline muted class="w-full h-full object-contain hidden"></video>
+          <img id="staticScreenImage" class="w-full h-full object-contain hidden" alt="Uploaded Screen Screenshot" />
+          <canvas id="hiddenCanvas" class="hidden"></canvas>
+          
+          <!-- Placeholder when screen not sharing -->
+          <div id="videoPlaceholder" class="flex flex-col items-center justify-center p-6 text-center gap-3">
+            <div class="w-14 h-14 rounded-2xl bg-slate-900/80 border border-slate-800 flex items-center justify-center text-slate-500">
+              <i class="ph-thin ph-screencast text-3xl"></i>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-slate-300">No active screen stream or image</p>
+              <p class="text-xs text-slate-500 mt-0.5 max-w-sm">Use direct browser screen share or upload a screenshot of your task screen below.</p>
+            </div>
+            <div class="flex flex-wrap items-center justify-center gap-2 mt-1">
+              <button id="startScreenBtn" class="px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-medium text-xs transition flex items-center gap-2 shadow-lg shadow-brand-600/25">
+                <i class="ph-bold ph-play"></i> Live Screen Share
+              </button>
+              <label class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-medium text-xs transition cursor-pointer flex items-center gap-2">
+                <i class="ph-bold ph-upload-simple text-brand-400"></i> Upload Screenshot
+                <input type="file" id="screenUploadInput" accept="image/*" class="hidden" />
+              </label>
+            </div>
+          </div>
+
+          <!-- Video Overlay Controls -->
+          <div id="videoOverlayControls" class="absolute bottom-3 right-3 hidden flex items-center gap-2">
+            <button id="stopScreenBtn" class="px-3 py-1.5 rounded-lg bg-red-500/80 hover:bg-red-500 text-white text-xs font-medium backdrop-blur transition flex items-center gap-1.5">
+              <i class="ph-bold ph-stop"></i> Stop Share
+            </button>
+            <button id="captureSnapshotBtn" class="px-3 py-1.5 rounded-lg bg-brand-600/90 hover:bg-brand-500 text-white text-xs font-medium backdrop-blur transition flex items-center gap-1.5">
+              <i class="ph-bold ph-camera"></i> Manual Snapshot
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Voice Interaction Panel -->
+      <div class="glass-panel rounded-2xl p-4 flex flex-col gap-4">
+        <div class="flex items-center justify-between border-b border-slate-800/60 pb-2">
+          <div class="flex items-center gap-2">
+            <i class="ph-bold ph-microphone text-brand-500"></i>
+            <h2 class="text-sm font-semibold text-slate-200">Voice Control Center</h2>
+          </div>
+          <div class="flex items-center gap-2 text-xs">
+            <button id="toggleTtsBtn" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 flex items-center gap-1">
+              <i id="ttsIcon" class="ph-bold ph-speaker-high text-brand-400"></i>
+              <span id="ttsStatusText">TTS: On</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <!-- Voice Recognition Controls -->
+          <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800/80 flex flex-col items-center justify-center gap-2 text-center">
+            <button id="micBtn" class="w-14 h-14 rounded-full bg-slate-800 border-2 border-slate-700 hover:border-brand-500 text-slate-300 hover:text-white flex items-center justify-center text-2xl transition-all duration-300 shadow-md">
+              <i class="ph-bold ph-microphone"></i>
+            </button>
+            <div>
+              <p id="micStatusLabel" class="text-xs font-medium text-slate-300">Click to Speak</p>
+              <p class="text-[11px] text-slate-500 mt-0.5">Continuous Voice Input</p>
+            </div>
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <div class="flex flex-col gap-2 justify-center">
+            <button id="askCurrentScreenBtn" class="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium transition flex items-center justify-center gap-2">
+              <i class="ph-bold ph-sparkle text-amber-400"></i> Ask: "What should I do next?"
+            </button>
+            <button id="readLastResponseBtn" class="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium transition flex items-center justify-center gap-2">
+              <i class="ph-bold ph-speaker-simple-high text-indigo-400"></i> Repeat Audio Response
+            </button>
+            <button id="clearHistoryBtn" class="w-full py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-slate-200 text-xs transition flex items-center justify-center gap-2">
+              <i class="ph-bold ph-trash"></i> Clear Log
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Speech Recognition Transcript Box -->
+        <div class="bg-slate-950/70 rounded-xl p-3 border border-slate-800/80 text-xs">
+          <span class="text-slate-500 font-medium">Live Speech Input:</span>
+          <p id="liveTranscript" class="text-slate-300 italic mt-1 min-h-[1.5rem]">Listening for your voice request...</p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Right Column: Assistant Interaction Log & System Prompt -->
+    <section class="lg:col-span-5 flex flex-col gap-5">
+      
+      <!-- System Persona & Active Knowledge Summary -->
+      <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="ph-bold ph-sliders text-brand-500"></i>
+            <h2 class="text-sm font-semibold text-slate-200">Task Assistant Persona & Skill</h2>
+          </div>
+          <button id="resetPromptBtn" class="text-[11px] text-brand-400 hover:text-brand-300">Reset Default</button>
+        </div>
+        <textarea id="systemPrompt" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500 resize-none" placeholder="Set AI system prompt..."></textarea>
+        
+        <!-- Active Docs Counter -->
+        <div class="flex items-center justify-between text-[11px] bg-slate-950/60 p-2 rounded-lg border border-slate-800">
+          <span class="text-slate-400 flex items-center gap-1.5">
+            <i class="ph-bold ph-books text-brand-400"></i> Attached Knowledge Reference:
+          </span>
+          <span id="activeDocCountLabel" class="font-medium text-brand-300">0 Documents attached</span>
+        </div>
+      </div>
+
+      <!-- Real-time Interaction Chat Log -->
+      <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3 flex-1 min-h-[320px] max-h-[500px]">
+        <div class="flex items-center justify-between border-b border-slate-800/60 pb-2">
+          <div class="flex items-center gap-2">
+            <i class="ph-bold ph-chat-teardrop-dots text-brand-500"></i>
+            <h2 class="text-sm font-semibold text-slate-200">Real-Time Assistant Guidance Log</h2>
+          </div>
+          <span id="logCountBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">0 Events</span>
+        </div>
+
+        <div id="chatHistory" class="flex-1 overflow-y-auto flex flex-col gap-3 pr-1">
+          <div id="emptyState" class="flex flex-col items-center justify-center my-auto py-8 text-center gap-2 text-slate-500">
+            <i class="ph-thin ph-chats-circle text-4xl text-slate-600"></i>
+            <p class="text-xs">No guidance interactions recorded yet.</p>
+            <p class="text-[11px] text-slate-600">Ask a question by mic or click "Ask What to do next" above.</p>
+          </div>
+        </div>
+
+        <!-- Manual Query Input Box -->
+        <div class="flex items-center gap-2 pt-2 border-t border-slate-800/60">
+          <input type="text" id="textInput" placeholder="Type a task question for current screen..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500" />
+          <button id="sendBtn" class="px-3.5 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-semibold transition flex items-center gap-1">
+            <i class="ph-bold ph-paper-plane-tilt"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Knowledge Base & Reference PDFs Modal -->
+  <div id="docsModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-panel rounded-2xl max-w-lg w-full p-5 border border-slate-700/80 flex flex-col gap-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+          <i class="ph-bold ph-file-text text-brand-500"></i> Skill Presets & Reference Documents
+        </h3>
+        <button id="closeDocsModalBtn" class="text-slate-400 hover:text-white text-lg">
+          <i class="ph-bold ph-x"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-400">Upload PDFs, text files, or task instructions. The AI will use these documents as reference knowledge when answering questions about your screen.</p>
+
+      <!-- Upload Drop Zone -->
+      <label class="border-2 border-dashed border-slate-700 hover:border-brand-500/70 bg-slate-900/50 rounded-xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition">
+        <i class="ph-bold ph-cloud-arrow-up text-2xl text-brand-400"></i>
+        <div class="text-center">
+          <p class="text-xs font-semibold text-slate-200">Click to upload reference PDFs or Text files</p>
+          <p class="text-[11px] text-slate-500">Supports .pdf, .txt, .md, .json</p>
+        </div>
+        <input type="file" id="docFileInput" accept=".pdf,.txt,.md,.json" multiple class="hidden" />
+      </label>
+
+      <!-- Document List -->
+      <div class="flex flex-col gap-2">
+        <h4 class="text-xs font-semibold text-slate-300">Loaded Reference Knowledge</h4>
+        <div id="loadedDocsList" class="max-h-48 overflow-y-auto flex flex-col gap-1.5 pr-1">
+          <div class="text-center py-4 text-xs text-slate-500 italic">No reference documents loaded yet.</div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+        <button id="closeDocsBtn" class="w-full py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-semibold transition">
+          Done & Apply Knowledge
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Drawer / Modal for Local Endpoint or Cloud API Configuration -->
+  <div id="settingsModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-panel rounded-2xl max-w-md w-full p-5 border border-slate-700/80 flex flex-col gap-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+          <i class="ph-bold ph-sliders-horizontal text-brand-500"></i> API Endpoint Settings
+        </h3>
+        <button id="closeSettingsBtn" class="text-slate-400 hover:text-white text-lg">
+          <i class="ph-bold ph-x"></i>
+        </button>
+      </div>
+
+      <!-- Provider Selection Tabs -->
+      <div class="grid grid-cols-2 gap-2 bg-slate-900 p-1 rounded-xl border border-slate-800">
+        <button id="providerLocalBtn" class="py-1.5 text-xs font-medium rounded-lg transition bg-brand-600 text-white">
+          Local (LM Studio / Ollama)
+        </button>
+        <button id="providerGeminiBtn" class="py-1.5 text-xs font-medium rounded-lg transition text-slate-400 hover:text-white">
+          Cloud Gemini API
+        </button>
+      </div>
+
+      <!-- Local Endpoint Form -->
+      <div id="localConfigSection" class="flex flex-col gap-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Base URL</label>
+          <input type="text" id="localBaseUrl" value="http://localhost:1234" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500" placeholder="e.g. http://localhost:1234 or http://localhost:11434">
+          <p class="text-[11px] text-slate-500 mt-1">LM Studio: default port 1234 | Ollama: port 11434</p>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Model Name / Identifier</label>
+          <input type="text" id="localModelName" value="OpenGVLab/InternVL3_5-4B-GGUF" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500" placeholder="e.g. InternVL3_5-4B-GGUF or llava">
+        </div>
+      </div>
+
+      <!-- Gemini Endpoint Form -->
+      <div id="geminiConfigSection" class="flex flex-col gap-3 hidden">
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Gemini API Key</label>
+          <input type="password" id="geminiApiKey" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500" placeholder="Paste your Gemini API key here">
+          <p class="text-[11px] text-slate-500 mt-1">Uses model: <code class="text-indigo-400">gemini-3-flash-preview</code></p>
+        </div>
+      </div>
+
+      <!-- TTS Voice Settings -->
+      <div class="border-t border-slate-800 pt-3">
+        <label class="block text-xs font-medium text-slate-300 mb-1">Text-to-Speech Voice</label>
+        <select id="voiceSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+          <option value="">Default System Voice</option>
+        </select>
+      </div>
+
+      <!-- Save & Close -->
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+        <button id="saveSettingsBtn" class="w-full py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-semibold transition">
+          Save Settings & Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast Container -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Application Logic -->
+  <script>
+    // --- Application State ---
+    const state = {
+      provider: 'local', // 'local' or 'gemini'
+      localBaseUrl: 'http://localhost:1234',
+      localModelName: 'OpenGVLab/InternVL3_5-4B-GGUF',
+      geminiApiKey: '',
+      systemPrompt: 'You are a real-time voice and vision productivity assistant. Analyze the user\'s screen capture image alongside their attached reference documents and provide brief, direct, actionable step-by-step guidance for their daily task.',
+      autoSnapshot: false,
+      snapshotIntervalSec: 5,
+      intervalId: null,
+      screenStream: null,
+      uploadedScreenBase64: null,
+      isListening: false,
+      ttsEnabled: true,
+      lastResponseText: '',
+      voices: [],
+      documents: [] // Array of { name: string, size: string, content: string }
+    };
+
+    // --- DOM Elements ---
+    const elements = {
+      screenVideo: document.getElementById('screenVideo'),
+      staticScreenImage: document.getElementById('staticScreenImage'),
+      hiddenCanvas: document.getElementById('hiddenCanvas'),
+      videoPlaceholder: document.getElementById('videoPlaceholder'),
+      videoOverlayControls: document.getElementById('videoOverlayControls'),
+      startScreenBtn: document.getElementById('startScreenBtn'),
+      stopScreenBtn: document.getElementById('stopScreenBtn'),
+      screenUploadInput: document.getElementById('screenUploadInput'),
+      captureSnapshotBtn: document.getElementById('captureSnapshotBtn'),
+      autoSnapshotToggle: document.getElementById('autoSnapshotToggle'),
+      snapshotInterval: document.getElementById('snapshotInterval'),
+      micBtn: document.getElementById('micBtn'),
+      micStatusLabel: document.getElementById('micStatusLabel'),
+      liveTranscript: document.getElementById('liveTranscript'),
+      toggleTtsBtn: document.getElementById('toggleTtsBtn'),
+      ttsIcon: document.getElementById('ttsIcon'),
+      ttsStatusText: document.getElementById('ttsStatusText'),
+      askCurrentScreenBtn: document.getElementById('askCurrentScreenBtn'),
+      readLastResponseBtn: document.getElementById('readLastResponseBtn'),
+      clearHistoryBtn: document.getElementById('clearHistoryBtn'),
+      systemPrompt: document.getElementById('systemPrompt'),
+      resetPromptBtn: document.getElementById('resetPromptBtn'),
+      chatHistory: document.getElementById('chatHistory'),
+      emptyState: document.getElementById('emptyState'),
+      logCountBadge: document.getElementById('logCountBadge'),
+      textInput: document.getElementById('textInput'),
+      sendBtn: document.getElementById('sendBtn'),
+      openSettingsBtn: document.getElementById('openSettingsBtn'),
+      closeSettingsBtn: document.getElementById('closeSettingsBtn'),
+      settingsModal: document.getElementById('settingsModal'),
+      openDocsModalBtn: document.getElementById('openDocsModalBtn'),
+      closeDocsModalBtn: document.getElementById('closeDocsModalBtn'),
+      closeDocsBtn: document.getElementById('closeDocsBtn'),
+      docsModal: document.getElementById('docsModal'),
+      docFileInput: document.getElementById('docFileInput'),
+      loadedDocsList: document.getElementById('loadedDocsList'),
+      activeDocCountLabel: document.getElementById('activeDocCountLabel'),
+      providerLocalBtn: document.getElementById('providerLocalBtn'),
+      providerGeminiBtn: document.getElementById('providerGeminiBtn'),
+      localConfigSection: document.getElementById('localConfigSection'),
+      geminiConfigSection: document.getElementById('geminiConfigSection'),
+      localBaseUrl: document.getElementById('localBaseUrl'),
+      localModelName: document.getElementById('localModelName'),
+      geminiApiKey: document.getElementById('geminiApiKey'),
+      saveSettingsBtn: document.getElementById('saveSettingsBtn'),
+      voiceSelect: document.getElementById('voiceSelect'),
+      screenStatusBadge: document.getElementById('screenStatusBadge'),
+      voiceStatusBadge: document.getElementById('voiceStatusBadge'),
+      toastContainer: document.getElementById('toastContainer')
+    };
+
+    // --- Speech Recognition Setup ---
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null;
+
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onresult = (event) => {
+        let interimTranscript = '';
+        let finalTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+
+        elements.liveTranscript.textContent = finalTranscript || interimTranscript || 'Listening...';
+
+        if (finalTranscript.trim().length > 0) {
+          showToast('Voice query captured', 'info');
+          processUserQuery(finalTranscript.trim());
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.warn('Speech recognition error:', event.error);
+        elements.micStatusLabel.textContent = 'Error listening';
+        updateVoiceStatus(false);
+      };
+
+      recognition.onend = () => {
+        if (state.isListening) {
+          try { recognition.start(); } catch(e) {}
+        } else {
+          updateVoiceStatus(false);
+        }
+      };
+    }
+
+    // --- Text To Speech Setup ---
+    function initTtsVoices() {
+      if ('speechSynthesis' in window) {
+        const updateVoices = () => {
+          state.voices = window.speechSynthesis.getVoices();
+          elements.voiceSelect.innerHTML = '<option value="">Default System Voice</option>';
+          state.voices.forEach((v, index) => {
+            const opt = document.createElement('option');
+            opt.value = index;
+            opt.textContent = `${v.name} (${v.lang})`;
+            elements.voiceSelect.appendChild(opt);
+          });
+        };
+        updateVoices();
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+          speechSynthesis.onvoiceschanged = updateVoices;
+        }
+      }
+    }
+
+    function speakText(text) {
+      if (!state.ttsEnabled || !('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel(); // Stop current speech
+      const utterance = new SpeechSynthesisUtterance(text);
+      
+      const selectedIndex = elements.voiceSelect.value;
+      if (selectedIndex !== '' && state.voices[selectedIndex]) {
+        utterance.voice = state.voices[selectedIndex];
+      }
+      
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // --- UI Helpers & Notifications ---
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = `px-4 py-2.5 rounded-xl text-xs font-medium text-white shadow-lg backdrop-blur-md transition-all duration-300 transform translate-y-2 pointer-events-auto flex items-center gap-2 border ${
+        type === 'error' ? 'bg-red-950/90 border-red-700/80 text-red-200' : 'bg-slate-900/90 border-slate-700/80 text-slate-200'
+      }`;
+      const iconClass = type === 'error' ? 'ph-warning-circle text-red-400' : 'ph-info text-brand-400';
+      toast.innerHTML = `<i class="ph-bold ${iconClass} text-base"></i><span>${message}</span>`;
+      
+      elements.toastContainer.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.remove('translate-y-2');
+        toast.classList.add('opacity-0', '-translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    function updateScreenStatus(active) {
+      if (active) {
+        elements.screenStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span><span class="text-emerald-400">Sharing Screen</span>`;
+      } else {
+        elements.screenStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-500"></span><span class="text-slate-400">Screen Idle</span>`;
+      }
+    }
+
+    function updateVoiceStatus(active) {
+      state.isListening = active;
+      if (active) {
+        elements.micBtn.classList.add('bg-brand-600', 'border-brand-400', 'text-white', 'pulse-glow');
+        elements.micBtn.classList.remove('bg-slate-800', 'border-slate-700', 'text-slate-300');
+        elements.micStatusLabel.textContent = 'Listening... (Click to Stop)';
+        elements.voiceStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span><span class="text-emerald-400">Mic Active</span>`;
+      } else {
+        elements.micBtn.classList.remove('bg-brand-600', 'border-brand-400', 'text-white', 'pulse-glow');
+        elements.micBtn.classList.add('bg-slate-800', 'border-slate-700', 'text-slate-300');
+        elements.micStatusLabel.textContent = 'Click to Speak';
+        elements.voiceStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-500"></span><span class="text-slate-400">Voice Off</span>`;
+      }
+    }
+
+    // --- Knowledge Base & Document Processing ---
+    async function handleDocumentUpload(event) {
+      const files = Array.from(event.target.files);
+      for (const file of files) {
+        try {
+          let textContent = '';
+          if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+            textContent = `[PDF Document: ${file.name}]\n`;
+            const rawText = await file.text();
+            textContent += rawText.replace(/[^\x20-\x7E\n]/g, ' ').slice(0, 4000);
+          } else {
+            textContent = await file.text();
+          }
+          
+          state.documents.push({
+            name: file.name,
+            size: (file.size / 1024).toFixed(1) + ' KB',
+            content: textContent
+          });
+          showToast(`Uploaded: ${file.name}`, 'info');
+        } catch (err) {
+          showToast(`Failed to parse ${file.name}`, 'error');
+        }
+      }
+      renderDocsList();
+    }
+
+    function renderDocsList() {
+      if (state.documents.length === 0) {
+        elements.loadedDocsList.innerHTML = `<div class="text-center py-4 text-xs text-slate-500 italic">No reference documents loaded yet.</div>`;
+        elements.activeDocCountLabel.textContent = `0 Documents attached`;
+        return;
+      }
+
+      elements.loadedDocsList.innerHTML = '';
+      state.documents.forEach((doc, index) => {
+        const item = document.createElement('div');
+        item.className = 'flex items-center justify-between p-2 rounded-lg bg-slate-950 border border-slate-800 text-xs';
+        item.innerHTML = `
+          <div class="flex items-center gap-2 overflow-hidden">
+            <i class="ph-bold ph-file-text text-brand-400"></i>
+            <span class="truncate font-medium text-slate-200">${doc.name}</span>
+            <span class="text-[10px] text-slate-500">(${doc.size})</span>
+          </div>
+          <button data-index="${index}" class="remove-doc-btn text-slate-500 hover:text-red-400 p-1">
+            <i class="ph-bold ph-trash"></i>
+          </button>
+        `;
+        elements.loadedDocsList.appendChild(item);
+      });
+
+      elements.loadedDocsList.querySelectorAll('.remove-doc-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = parseInt(e.currentTarget.getAttribute('data-index'), 10);
+          state.documents.splice(idx, 1);
+          renderDocsList();
+        });
+      });
+
+      elements.activeDocCountLabel.textContent = `${state.documents.length} Document${state.documents.length > 1 ? 's' : ''} attached`;
+    }
+
+    // --- Screen Capture Engine ---
+    async function startScreenSharing() {
+      try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { cursor: "always" },
+          audio: false
+        });
+        
+        state.screenStream = stream;
+        state.uploadedScreenBase64 = null;
+        elements.screenVideo.srcObject = stream;
+        elements.screenVideo.classList.remove('hidden');
+        elements.staticScreenImage.classList.add('hidden');
+        elements.videoPlaceholder.classList.add('hidden');
+        elements.videoOverlayControls.classList.remove('hidden');
+
+        updateScreenStatus(true);
+        showToast('Screen capture stream started', 'info');
+
+        stream.getVideoTracks()[0].onended = () => {
+          stopScreenSharing();
+        };
+
+        if (state.autoSnapshot) startAutoSnapshotTimer();
+      } catch (err) {
+        console.warn('Screen capture error:', err);
+        showToast('Screen share blocked or unsupported. Use Upload Screenshot!', 'error');
+      }
+    }
+
+    function stopScreenSharing() {
+      if (state.screenStream) {
+        state.screenStream.getTracks().forEach(track => track.stop());
+        state.screenStream = null;
+      }
+      elements.screenVideo.classList.add('hidden');
+      elements.videoPlaceholder.classList.remove('hidden');
+      elements.videoOverlayControls.classList.add('hidden');
+      updateScreenStatus(false);
+      stopAutoSnapshotTimer();
+      showToast('Screen sharing stopped', 'info');
+    }
+
+    function handleScreenImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        state.uploadedScreenBase64 = event.target.result;
+        elements.staticScreenImage.src = state.uploadedScreenBase64;
+        elements.staticScreenImage.classList.remove('hidden');
+        elements.screenVideo.classList.add('hidden');
+        elements.videoPlaceholder.classList.add('hidden');
+        elements.videoOverlayControls.classList.remove('hidden');
+        updateScreenStatus(true);
+        showToast('Screen screenshot loaded', 'info');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function captureFrameAsBase64() {
+      if (state.uploadedScreenBase64) return state.uploadedScreenBase64;
+      if (!state.screenStream) return null;
+      const video = elements.screenVideo;
+      const canvas = elements.hiddenCanvas;
+      canvas.width = video.videoWidth || 1280;
+      canvas.height = video.videoHeight || 720;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL('image/jpeg', 0.85);
+    }
+
+    function startAutoSnapshotTimer() {
+      stopAutoSnapshotTimer();
+      const intervalMs = parseInt(state.snapshotIntervalSec, 10) * 1000;
+      state.intervalId = setInterval(() => {
+        if (state.screenStream || state.uploadedScreenBase64) {
+          processUserQuery("Analyze current screen and update task recommendation.", true);
+        }
+      }, intervalMs);
+    }
+
+    function stopAutoSnapshotTimer() {
+      if (state.intervalId) {
+        clearInterval(state.intervalId);
+        state.intervalId = null;
+      }
+    }
+
+    function buildAugmentedPrompt(userQuery) {
+      let prompt = userQuery;
+      if (state.documents.length > 0) {
+        prompt += "\n\n--- REFERENCE KNOWLEDGE DOCUMENTS ---\n";
+        state.documents.forEach((doc, i) => {
+          prompt += `[Doc ${i+1}: ${doc.name}]\n${doc.content.slice(0, 2000)}\n\n`;
+        });
+      }
+      return prompt;
+    }
+
+    // --- Multimodal AI API Integration ---
+    async function sendToLocalOpenAIEndpoint(base64Image, queryText) {
+      const url = `${state.localBaseUrl.replace(/\/$/, '')}/v1/chat/completions`;
+      
+      const contentParts = [
+        { type: "text", text: queryText }
+      ];
+
+      if (base64Image) {
+        contentParts.push({
+          type: "image_url",
+          image_url: { url: base64Image }
+        });
+      }
+
+      const payload = {
+        model: state.localModelName,
+        messages: [
+          { role: "system", content: state.systemPrompt },
+          { role: "user", content: contentParts }
+        ],
+        temperature: 0.3,
+        max_tokens: 450
+      };
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Local API error (${response.status}): ${await response.text()}`);
+      }
+
+      const data = await response.json();
+      return data.choices?.[0]?.message?.content || 'No response returned from local model.';
+    }
+
+    async function sendToGeminiEndpoint(base64Image, queryText) {
+      const apiKey = state.geminiApiKey.trim();
+      if (!apiKey) {
+        throw new Error('Gemini API key is required. Set it in API Endpoint Settings.');
+      }
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+      const parts = [{ text: queryText }];
+      
+      if (base64Image) {
+        const rawBase64 = base64Image.replace(/^data:image\/\w+;base64,/, '');
+        parts.push({
+          inlineData: {
+            mimeType: "image/jpeg",
+            data: rawBase64
+          }
+        });
+      }
+
+      const payload = {
+        contents: [{ role: "user", parts }],
+        systemInstruction: { parts: [{ text: state.systemPrompt }] }
+      };
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Gemini API error (${response.status}): ${await response.text()}`);
+      }
+
+      const data = await response.json();
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response text returned.';
+    }
+
+    // --- Query Handler & Chat Log Rendering ---
+    async function processUserQuery(queryText, isAutoInterval = false) {
+      const frameData = captureFrameAsBase64();
+      const augmentedQuery = buildAugmentedPrompt(queryText);
+      
+      // Render user turn in chat feed
+      addLogEntry({
+        role: 'user',
+        text: queryText + (state.documents.length > 0 ? ` [With ${state.documents.length} Ref Doc(s)]` : ''),
+        image: frameData,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        isAuto: isAutoInterval
+      });
+
+      // Render temporary thinking placeholder
+      const loadingLogId = addLogEntry({
+        role: 'assistant',
+        text: 'Analyzing screen & formulating guidance...',
+        isLoading: true
+      });
+
+      try {
+        let aiResponse = '';
+        if (state.provider === 'local') {
+          aiResponse = await sendToLocalOpenAIEndpoint(frameData, augmentedQuery);
+        } else {
+          aiResponse = await sendToGeminiEndpoint(frameData, augmentedQuery);
+        }
+
+        state.lastResponseText = aiResponse;
+        
+        // Update thinking entry with full response
+        updateLogEntry(loadingLogId, aiResponse);
+        
+        // Trigger Text-To-Speech read out
+        speakText(aiResponse);
+
+      } catch (err) {
+        console.error('AI Processing error:', err);
+        updateLogEntry(loadingLogId, `⚠️ Connection Error: ${err.message}`, true);
+        showToast('API call failed: Check settings or local server.', 'error');
+      }
+    }
+
+    function addLogEntry({ role, text, image, timestamp = '', isAuto = false, isLoading = false }) {
+      if (elements.emptyState) elements.emptyState.classList.add('hidden');
+      
+      const id = 'log-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4);
+      const card = document.createElement('div');
+      card.id = id;
+      card.className = `p-3 rounded-xl border text-xs flex flex-col gap-2 transition-all duration-300 ${
+        role === 'user' 
+          ? 'bg-slate-900/80 border-slate-800 text-slate-200 self-end w-full' 
+          : 'bg-brand-950/30 border-brand-800/40 text-slate-100 self-start w-full'
+      }`;
+
+      let imageHtml = '';
+      if (image) {
+        imageHtml = `<div class="relative w-full max-h-36 rounded-lg overflow-hidden border border-slate-800 bg-slate-950">
+          <img src="${image}" class="w-full h-full object-cover" alt="Captured Frame" />
+        </div>`;
+      }
+
+      card.innerHTML = `
+        <div class="flex items-center justify-between text-[11px] text-slate-400">
+          <span class="font-semibold flex items-center gap-1.5 ${role === 'user' ? 'text-indigo-400' : 'text-brand-400'}">
+            <i class="ph-bold ${role === 'user' ? 'ph-user' : 'ph-robot'}"></i>
+            ${role === 'user' ? 'User Question' : 'Assistant Co-Pilot'}
+            ${isAuto ? '<span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">Auto</span>' : ''}
+          </span>
+          <span>${timestamp}</span>
+        </div>
+        ${imageHtml}
+        <p class="log-text whitespace-pre-wrap leading-relaxed">${isLoading ? `<span class="inline-flex items-center gap-2"><i class="ph-bold ph-spinner animate-spin text-brand-400"></i> ${text}</span>` : text}</p>
+      `;
+
+      elements.chatHistory.appendChild(card);
+      elements.chatHistory.scrollTop = elements.chatHistory.scrollHeight;
+      
+      updateLogBadgeCount();
+      return id;
+    }
+
+    function updateLogEntry(id, newText, isError = false) {
+      const card = document.getElementById(id);
+      if (!card) return;
+      const textElem = card.querySelector('.log-text');
+      if (textElem) {
+        textElem.innerHTML = newText;
+        if (isError) card.classList.add('border-red-800', 'bg-red-950/20');
+      }
+      elements.chatHistory.scrollTop = elements.chatHistory.scrollHeight;
+    }
+
+    function updateLogBadgeCount() {
+      const count = elements.chatHistory.querySelectorAll('[id^="log-"]').length;
+      elements.logCountBadge.textContent = `${count} Events`;
+    }
+
+    // --- Event Listeners & Initialization ---
+    function setupEventListeners() {
+      // Screen Sharing Actions
+      elements.startScreenBtn.addEventListener('click', startScreenSharing);
+      elements.stopScreenBtn.addEventListener('click', stopScreenSharing);
+      elements.screenUploadInput.addEventListener('change', handleScreenImageUpload);
+      elements.docFileInput.addEventListener('change', handleDocumentUpload);
+
+      elements.captureSnapshotBtn.addEventListener('click', () => {
+        if (!state.screenStream && !state.uploadedScreenBase64) {
+          showToast('Start screen capture or upload screenshot first.', 'error');
+          return;
+        }
+        processUserQuery("Analyze current screen and describe actionable steps.", false);
+      });
+
+      // Auto Snapshot Toggle
+      elements.autoSnapshotToggle.addEventListener('change', (e) => {
+        state.autoSnapshot = e.target.checked;
+        if (state.autoSnapshot) {
+          if (!state.screenStream && !state.uploadedScreenBase64) {
+            showToast('Start screen capture to enable auto snapshot.', 'info');
+          }
+          startAutoSnapshotTimer();
+        } else {
+          stopAutoSnapshotTimer();
+        }
+      });
+
+      elements.snapshotInterval.addEventListener('change', (e) => {
+        state.snapshotIntervalSec = parseInt(e.target.value, 10);
+        if (state.autoSnapshot) startAutoSnapshotTimer();
+      });
+
+      // Microphone Voice Toggle
+      elements.micBtn.addEventListener('click', () => {
+        if (!recognition) {
+          showToast('Speech recognition not available on this browser.', 'error');
+          return;
+        }
+        if (state.isListening) {
+          recognition.stop();
+          updateVoiceStatus(false);
+        } else {
+          try {
+            recognition.start();
+            updateVoiceStatus(true);
+            showToast('Listening for voice input...', 'info');
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      });
+
+      // TTS Toggle & Quick Buttons
+      elements.toggleTtsBtn.addEventListener('click', () => {
+        state.ttsEnabled = !state.ttsEnabled;
+        if (state.ttsEnabled) {
+          elements.ttsIcon.className = 'ph-bold ph-speaker-high text-brand-400';
+          elements.ttsStatusText.textContent = 'TTS: On';
+          showToast('Voice response audio enabled');
+        } else {
+          elements.ttsIcon.className = 'ph-bold ph-speaker-slash text-slate-500';
+          elements.ttsStatusText.textContent = 'TTS: Off';
+          window.speechSynthesis.cancel();
+          showToast('Voice response audio muted');
+        }
+      });
+
+      elements.askCurrentScreenBtn.addEventListener('click', () => {
+        processUserQuery("What should I do next on this screen?", false);
+      });
+
+      elements.readLastResponseBtn.addEventListener('click', () => {
+        if (state.lastResponseText) {
+          speakText(state.lastResponseText);
+        } else {
+          showToast('No response available to read yet.', 'info');
+        }
+      });
+
+      elements.clearHistoryBtn.addEventListener('click', () => {
+        elements.chatHistory.innerHTML = '';
+        if (elements.emptyState) {
+          elements.chatHistory.appendChild(elements.emptyState);
+          elements.emptyState.classList.remove('hidden');
+        }
+        updateLogBadgeCount();
+        showToast('Interaction history cleared');
+      });
+
+      // Text Input Send
+      const sendText = () => {
+        const query = elements.textInput.value.trim();
+        if (!query) return;
+        elements.textInput.value = '';
+        processUserQuery(query, false);
+      };
+      elements.sendBtn.addEventListener('click', sendText);
+      elements.textInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') sendText();
+      });
+
+      // System Prompt Settings
+      elements.systemPrompt.value = state.systemPrompt;
+      elements.systemPrompt.addEventListener('change', (e) => {
+        state.systemPrompt = e.target.value;
+        showToast('System persona prompt updated');
+      });
+      elements.resetPromptBtn.addEventListener('click', () => {
+        const defaultPrompt = 'You are a real-time voice and vision productivity assistant. Analyze the user\'s screen capture image alongside their attached reference documents and provide brief, direct, actionable step-by-step guidance for their daily task.';
+        state.systemPrompt = defaultPrompt;
+        elements.systemPrompt.value = defaultPrompt;
+        showToast('System prompt reset to default');
+      });
+
+      // Modals Logic
+      elements.openDocsModalBtn.addEventListener('click', () => elements.docsModal.classList.remove('hidden'));
+      elements.closeDocsModalBtn.addEventListener('click', () => elements.docsModal.classList.add('hidden'));
+      elements.closeDocsBtn.addEventListener('click', () => elements.docsModal.classList.add('hidden'));
+
+      elements.openSettingsBtn.addEventListener('click', () => elements.settingsModal.classList.remove('hidden'));
+      elements.closeSettingsBtn.addEventListener('click', () => elements.settingsModal.classList.add('hidden'));
+      
+      elements.providerLocalBtn.addEventListener('click', () => {
+        state.provider = 'local';
+        elements.providerLocalBtn.className = 'py-1.5 text-xs font-medium rounded-lg transition bg-brand-600 text-white';
+        elements.providerGeminiBtn.className = 'py-1.5 text-xs font-medium rounded-lg transition text-slate-400 hover:text-white';
+        elements.localConfigSection.classList.remove('hidden');
+        elements.geminiConfigSection.classList.add('hidden');
+      });
+
+      elements.providerGeminiBtn.addEventListener('click', () => {
+        state.provider = 'gemini';
+        elements.providerGeminiBtn.className = 'py-1.5 text-xs font-medium rounded-lg transition bg-brand-600 text-white';
+        elements.providerLocalBtn.className = 'py-1.5 text-xs font-medium rounded-lg transition text-slate-400 hover:text-white';
+        elements.geminiConfigSection.classList.remove('hidden');
+        elements.localConfigSection.classList.add('hidden');
+      });
+
+      elements.saveSettingsBtn.addEventListener('click', () => {
+        state.localBaseUrl = elements.localBaseUrl.value.trim();
+        state.localModelName = elements.localModelName.value.trim();
+        state.geminiApiKey = elements.geminiApiKey.value.trim();
+        elements.settingsModal.classList.add('hidden');
+        showToast(`Saved settings (${state.provider === 'local' ? 'Local Model' : 'Cloud Gemini API'})`);
+      });
+    }
+
+    window.onload = () => {
+      initTtsVoices();
+      setupEventListeners();
+    };
+  </script>
+</body>
+</html>
